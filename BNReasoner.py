@@ -3,7 +3,7 @@ from BayesNet import BayesNet
 import pandas as pd
 import numpy as np
 import sys
-import itertools
+from itertools import combinations
 
 class BNReasoner:
     def __init__(self, net: Union[str, BayesNet]):
@@ -18,7 +18,7 @@ class BNReasoner:
         else:
             self.bn = net
 
-    def maxing_out(self, CPT, variable):
+    def maxing_out(self, CPT: dict, variable: str):
         """
         function to maximize out a variable from a cpt
         input:  - a cpt (dict)
@@ -55,7 +55,7 @@ class BNReasoner:
             
         return new_CPT.drop_duplicates()
 
-    def factor_mul(self, CPTS):
+    def factor_mul(self, CPTS: dict):
         """
         function to perform factor multiplication between n factors
         Input: dict of CPTS
@@ -115,9 +115,48 @@ class BNReasoner:
             CPT = factor1
             return CPT.drop_duplicates()
 
-    def mindeg_order(self):
-        pass
+    def mindeg_order(self, X: list):
+        interaction_graph = self.bn.get_interaction_graph()
+        nodes = {}
+        pi = []
+        
+        # count the amount of neighbors for all variables
+        for var in X:
+            nodes[var] = len(list(interaction_graph.neighbors(var)))
+        
+        for _ in range(len(X)):
+            # get the var with the least edges
+            next_var = min(nodes.keys(), key= lambda var: nodes[var])
+            nodes.pop(next_var)
+            # append this var in the elimination order
+            pi.append(next_var)
 
-    def minfil_order(self):
-        pass
+            # get a list of all neighbors of var
+            neighbors = list(interaction_graph.neighbors(next_var))
+            # remove node from interaction graph
+            interaction_graph.remove_node(next_var)
+            # loop over all possible pairs of neighbor and add a node if there isn't already
+            for pair in list(combinations(neighbors, 2)):
+                if not interaction_graph.has_edge(pair[0], pair[1]):
+                    interaction_graph.add_edge(pair[0], pair[1])
+
+        return pi
+
+    def minfil_order(self, X: list):
+        interaction_graph = self.bn.get_interaction_graph()
+        pi = []
+        new_edges = {var: 0 for var in X}
+
+        for _ in range(len(X)):
+            # count how many edges the removal of each var in X would add
+            for var in new_edges.keys():
+                neighbors = list(interaction_graph.neighbors(var))
+                for pair in list(combinations(neighbors, 2)):
+                    if not interaction_graph.has_edge(pair[0], pair[1]):
+                        new_edges[var] += 1 
+            next_var = min(new_edges.keys(), key = lambda var: new_edges[var])
+            pi.append(next_var)
+            new_edges.pop(next_var)
+
+        return pi
 
