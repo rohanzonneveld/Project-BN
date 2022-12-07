@@ -1,5 +1,6 @@
 from BayesNet import BayesNet
 from BNReasoner import BNReasoner
+import itertools
 
 testing_path=[ "testing/dog_problem.BIFXML",
                "testing/lecture_example.BIFXML",
@@ -12,9 +13,11 @@ exp_path=["bifxml_files/large_networks/win95pts.bifxml",
           "bifxml_files/small_networks/cancer.bifxml"]
 
 BN = BNReasoner(testing_path[0])
-cpt = BN.bn.get_all_cpts()['dog-out']
-print(cpt)
-new_cpt = BN.maxing_out(cpt,'family-out')
-print(new_cpt)
-second_cpt = BN.maxing_out(new_cpt, 'bowel-problem')
-print(second_cpt)
+cpts = BN.bn.get_all_cpts()
+# print(cpts['dog-out'])
+f1f2 = BN.factor_mul(dict(itertools.islice(cpts.items(), 2, 4)))
+print(cpts['dog-out'])
+print()
+print(cpts['hear-bark'])
+print()
+print(f1f2)
