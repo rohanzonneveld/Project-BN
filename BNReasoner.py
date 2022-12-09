@@ -214,4 +214,95 @@ class BNReasoner:
             new_CPT = self.maxing_out(CPT, index_same)
 
         return new_CPT
+    
+    def marginal_distribution(self, Q, evidence, order):
+            '''
+            Q = variables in the network BN
+            evidence = instantiation of some variables in the BN
+
+            output = posterior marginal Pr(Q|e)
+            '''
+
+            self.prune(Q, evidence)
+            not_Q = [x for x in self.bn.get_all_variables() if x not in Q]
+            if order == 1:
+                order = set(self.minDegreeOrder(not_Q))
+            elif order == 2:
+                order = set(self.minFillOrder(not_Q))
+
+            # get all cpts eliminating rows incompatible with evidence
+            for ev in evidence.keys():
+
+                cpts = self.bn.get_cpt(ev)
+                cpts = self.bn.reduce_factor(evidence, cpts)
+
+                for row in range(len(cpts)):
+                    if cpts.iloc[row]['p'] == 0:
+                        cpts.drop([row])
+
+                self.bn.update_cpt(ev, cpts)
+
+                for child in self.bn.get_children(ev):
+                    cpts = self.bn.get_cpt(child)
+                    cpts = self.bn.reduce_factor(evidence, cpts)
+
+                    for row in range(len(cpts)):
+                        if cpts.iloc[row]['p'] == 0:
+                            cpts.drop([row])
+
+                    self.bn.update_cpt(child, cpts)
+
+            # make CPTs of all variables in Pi not in Q
+            S = list(self.bn.get_all_cpts().values())
+
+            for variable in order:
+                list_cpts = []
+                list_goed = []
+
+                for i in range(0, len(S)):
+                    columns = list(S[i])
+                    if variable in columns:
+                        list_cpts.append(S[i])
+                    else:
+                        list_goed.append(S[i])
+
+                if len(list_cpts) > 0:
+                    cpt1 = list_cpts[0]
+
+                if len(list_cpts) == 1:
+                    list_goed.append(list_cpts[0])
+
+                if len(list_cpts) > 1:
+                    for cpt2 in list_cpts[1:]:
+                        cpt1 = self.factor_mul(cpt1, cpt2)
+                    final_cpt = cpt1
+
+                    factor = self.Variable_elimination(final_cpt, [variable], 'sum')
+                    list_goed.append(factor)
+
+                S = list_goed
+            cpt_new=pd.DataFrame()
+            for i in range(0, len(S) - 1):
+                if len(set(list(S[i])).intersection(set(list(S[i])))) > 1:
+                    cpt_new = self.factor_mul(S[i], S[i + 1])
+                else:
+                    cpt_new = self.cpt_mul(S[i], S[i + 1])
+                    #TODO:need a function to multiply cpts
+
+                S[i + 1] = cpt_new
+            final_cpt = cpt_new
+            final_cpt = final_cpt[final_cpt['p'] != 0]
+
+            for var in list(cpt_new):
+                if var != "p":
+                    if var not in Q:
+                        final_cpt = self.Variable_elimination(final_cpt, [var], 'sum')
+
+            normalize_factor = final_cpt['p'].sum()
+            final_cpt['p'] = final_cpt['p'] / normalize_factor
+
+            # zero
+            final_cpt = final_cpt[final_cpt['p'] != 0]
+
+            return final_cpt
 
