@@ -159,4 +159,31 @@ class BNReasoner:
             new_edges.pop(next_var)
 
         return pi
+    
+    def summing_out(self, CPT, index_same, list):
+        '''
+        create the final new CPT without the variables that should be summed out
+        '''
+        new_CPT = CPT.copy()
+        for variable in list:
+            new_CPT = new_CPT.drop(columns=[variable])
+
+        for key in index_same:
+
+            p_value_sum = CPT.iloc[key]['p']
+
+            equal_indexes = [index_same.get(key)]
+
+            for i in equal_indexes:
+                p = CPT.iloc[i]['p'].values
+                p_value_sum += p[0]
+                new_CPT.at[i, 'p'] = 0
+
+            new_CPT.at[key, 'p'] = p_value_sum
+
+        for index_CPT in range(len(new_CPT)):
+            if new_CPT.iloc[index_CPT]['p'] == 0:
+                new_CPT.drop([index_CPT])
+
+        return new_CPT
 
