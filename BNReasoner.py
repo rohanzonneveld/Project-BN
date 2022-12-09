@@ -186,4 +186,32 @@ class BNReasoner:
                 new_CPT.drop([index_CPT])
 
         return new_CPT
+    
+    def Variable_elimination(self, CPT, list, type):
+
+        index_same = {}
+
+        clean_CPT = CPT.copy()
+
+        clean_CPT = clean_CPT.drop(columns=["p"])
+        for variable in list:
+            clean_CPT = clean_CPT.drop(columns=[variable])
+
+        for row_1 in clean_CPT.iloc:
+            for i in range(row_1.name + 1, len(clean_CPT)):
+                row_2 = clean_CPT.iloc[i]
+
+                if row_1.equals(row_2):
+
+                    if row_1.name in index_same:
+                        index_same[row_1.name].append(i)
+                    else:
+                        index_same[row_1.name] = [i]
+
+        if type == "sum":
+            new_CPT = self.summing_out(CPT, index_same, list)
+        elif type == "max":
+            new_CPT = self.maxing_out(CPT, index_same)
+
+        return new_CPT
 
