@@ -226,9 +226,9 @@ class BNReasoner:
             self.prune(Q, evidence)
             not_Q = [x for x in self.bn.get_all_variables() if x not in Q]
             if order == 1:
-                order = set(self.minDegreeOrder(not_Q))
+                order = set(self.mindeg_order(not_Q))
             elif order == 2:
-                order = set(self.minFillOrder(not_Q))
+                order = set(self.minfil_order(not_Q))
 
             # get all cpts eliminating rows incompatible with evidence
             for ev in evidence.keys():
