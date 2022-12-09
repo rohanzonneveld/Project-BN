@@ -306,7 +306,8 @@ class BNReasoner:
 
             return final_cpt
         
-            def MAP_MPE(self, Q, evidence, order):
+        
+    def MAP_MPE(self, Q, evidence, order):
 
         # if it is a MPE than map_var is the total BN with all the possible values in it
         pruned = self.prune(Q, evidence)
@@ -422,4 +423,6 @@ class BNReasoner:
         
         # print(f"final_cpt {newest_cpt}")
         return newest_cpt
+        
+     
 
