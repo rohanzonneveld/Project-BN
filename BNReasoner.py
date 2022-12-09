@@ -305,4 +305,121 @@ class BNReasoner:
             final_cpt = final_cpt[final_cpt['p'] != 0]
 
             return final_cpt
+        
+            def MAP_MPE(self, Q, evidence, order):
+
+        # if it is a MPE than map_var is the total BN with all the possible values in it
+        pruned = self.prune(Q, evidence)
+
+        variables = self.bn.get_all_variables()
+
+        if list(set(variables) - set(Q)) == []:
+            not_Q = variables
+        else:
+            not_Q = list(set(variables) - set(Q))
+
+        if order == 1:
+            order = set(self.mindeg_order(not_Q))
+        elif order == 2:
+            order = set(self.minfil_order(not_Q))
+        
+        # add MAP variables last
+        if len(Q) != 0:
+            for i in Q:
+                order.add(i)
+
+        # get all cpts eliminating rows incompatible with evidence
+        for ev in evidence.keys():
+
+            cpts = self.bn.get_cpt(ev)
+            cpts = self.bn.reduce_factor(evidence, cpts)
+
+            for row in range(len(cpts)):
+                if cpts.iloc[row]['p'] == 0:
+                    cpts.drop([row])
+
+            self.bn.update_cpt(ev, cpts)
+
+            for child in self.bn.get_children(ev):
+                cpts = self.bn.get_cpt(child)
+                cpts = self.bn.reduce_factor(evidence, cpts)
+
+                for row in range(len(cpts)):
+                    if cpts.iloc[row]['p'] == 0:
+                        cpts.drop([row])
+
+                self.bn.update_cpt(child, cpts)
+
+        # make CPTs of all variables in Pi not in Q
+        S = list(self.bn.get_all_cpts().values())
+
+        for variable in order:
+
+            list_cpts = []
+            list_goed = []
+
+            for i in range(0, len(S)):
+                columns = list(S[i])
+                if variable in columns:
+                    list_cpts.append(S[i])
+                else:
+                    list_goed.append(S[i])
+
+            if len(list_cpts) == 1:
+                list_goed.append(list_cpts[0])
+
+            if len(list_cpts) > 0:
+                cpt1 = list_cpts[0]
+
+            if len(list_cpts) > 1:
+                for cpt2 in list_cpts[1:]:
+                    cpt1 = self.factor_mul(cpt1, cpt2)
+            
+                final_cpt = cpt1
+                final_cpt = final_cpt[final_cpt['p'] != 0]
+
+                if Q == {} or variable in Q:
+
+                    cpt = self.Variable_elimination(final_cpt, [variable], 'max')
+
+                else:
+                    cpt = self.Variable_elimination(final_cpt, [variable], 'sum')
+
+                cpt = cpt[cpt['p'] != 0]
+
+                list_goed.append(cpt)
+
+            S = list_goed
+
+            # print(S)
+        if len(S) == 1:
+            cpt_new = S[0]
+        else:
+            for i in range(0, len(S) - 1):
+                cpt_new = self.cpt_mul(S[i], S[i + 1])
+                #TODO:need a function to multiply cpts
+
+                S[i + 1] = cpt_new
+        final_cpt = cpt_new
+
+        highest_p = 0
+        final_cpt = final_cpt[final_cpt['p'] != 0]
+
+        length_final_cpt = len(final_cpt)
+        for i in range(length_final_cpt):
+
+            if final_cpt.iloc[i]["p"] > highest_p:
+                highest_p = final_cpt.iloc[i]["p"]
+                final_row = final_cpt.iloc[i]
+
+        newest_cpt = pd.DataFrame()
+        newest_cpt = newest_cpt.append(final_row, ignore_index=True)
+
+        for column in newest_cpt:
+            if column != "p":
+                if column not in Q and Q != {}:
+                    newest_cpt = newest_cpt.drop(columns=[column])
+        
+        # print(f"final_cpt {newest_cpt}")
+        return newest_cpt
 
