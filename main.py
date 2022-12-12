@@ -4,13 +4,14 @@ import itertools
 
 testing_path=[ "testing/dog_problem.BIFXML",
                "testing/lecture_example.BIFXML",
-               "testing/lecture_example2.BIFXML",
-               "testing/task3.BIFXML"]
+               "testing/lecture_example2.BIFXML"
+               ]
 
 exp_path=["bifxml_files/large_networks/win95pts.bifxml",
           "bifxml_files/medium_networks/medium.BIFXML",
           "bifxml_files/small_networks/asia.bifxml",
-          "bifxml_files/small_networks/cancer.bifxml"]
+          "bifxml_files/small_networks/cancer.bifxml",
+          "bifxml_files/traffic.bifxml"]
 
 
 def test_factor_mul(BN):
@@ -41,10 +42,18 @@ def test_minfil_order(BN):
     pi = BN.minfil_order(X)
     print(f'pi = {pi}')
 
+def create_usecase_structure(BN):
+    BN = BNReasoner(exp_path[-1])
+    
+    pos = {}
+
+    BN.bn.draw_structure(pos)
+
 
 if __name__ == '__main__':
-    BN = BNReasoner(testing_path[0])
-    # BN.bn.draw_structure()
+    BN = BNReasoner(exp_path[-1])
+    BN.bn.draw_structure()
+
 
     # test_maxing_out(BN)
     # test_factor_mul(BN)
