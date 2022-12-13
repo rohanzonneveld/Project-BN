@@ -50,7 +50,7 @@ def create_usecase_structure(BN):
     BN.bn.draw_structure(pos)
 
 def main():
-    BN = BNReasoner(exp_path[0])
+    BN = BNReasoner(testing_path[0])
     BN.bn.draw_structure()
     start = timeit.default_timer()
 
