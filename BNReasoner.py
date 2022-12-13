@@ -1,5 +1,5 @@
 from typing import Union
-from BayesNet import BayesNet
+import BayesNet
 import copy
 import networkx as nx
 
