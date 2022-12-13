@@ -27,7 +27,7 @@ class BNReasoner:
                 return False
         
         #Fork
-        if start in bn.get_children(middle) and end in bn.get_children(end):
+        if start in bn.get_children(middle) and end in bn.get_children(middle):
             if middle in evidence:
                 return False
 
@@ -38,7 +38,6 @@ class BNReasoner:
         
         return True
 
-    def multiply_cpts(self, cpt1, cpt2)
 
     def prune(self, query: list, evidence: dict) -> None:
         """
@@ -77,11 +76,13 @@ class BNReasoner:
         :param z: The observations that are known to be true. Can be a single variable or a list of variables.
         :return: True if x and y are independent given z, False otherwise.
         """
+        cp = copy.deepcopy(self.bn.structure)
+        for edge in self.bn.structure.edges:
+            cp.add_edge(edge[1], edge[0])
 
-        paths = nx.all_simple_paths(self.bn.structure, x, y)
+        paths = nx.all_simple_paths(cp, x, y)
         for path in paths:
             active = True
-            print(path)
             for idx in range(1, len(path)-1):
                 if not self.is_path_activedd(path[idx-1], path[idx], path[idx+1], z):
                     active = False
@@ -112,9 +113,10 @@ if __name__ == '__main__':
     bn = BayesNet()
     bn.load_from_bifxml('Projects/KR/Project-BN/testing/lecture_example.BIFXML')
     bnr = BNReasoner(bn)
-    bn.draw_structure()
-    bnr.prune([],{'Rain?':False})
-    bn.draw_structure()
+    print(bn.structure.nodes)
+    print(type(list(bn.structure.nodes)))
+    # x = bnr.d_separation('Sprinkler?', 'Rain?', ['Wet Grass?'])
+    # print(x)
 
 
 
