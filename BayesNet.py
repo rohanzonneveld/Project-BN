@@ -177,14 +177,14 @@ class BayesNet:
         else:
             return cpt
 
-    def draw_structure(self, pos = None) -> None:
+    def draw_structure(self, pos = None, node_color=None) -> None:
         """
         Visualize structure of the BN.
         """
         if pos == None:
             nx.draw_networkx(self.structure, with_labels=True, node_size=3000)
         else:
-            nx.draw_networkx(self.structure, with_labels=True, node_size=3000, pos=pos)
+            nx.draw_networkx(self.structure, with_labels=True, node_size=3000, pos=pos, node_color=node_color)
 
         plt.show()
 

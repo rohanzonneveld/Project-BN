@@ -42,17 +42,33 @@ def test_minfil_order(BN):
     pi = BN.minfil_order(X)
     print(f'pi = {pi}')
 
-def create_usecase_structure(BN):
+def create_usecase_structure():
     BN = BNReasoner(exp_path[-1])
     
-    pos = {}
+    pos = {"Raining": (1, 10),
+            "Daytime": (5, 10),
+            "Weekend": (9, 10),
+            "Busy": (0.5, 7.5),
+            "Road-closure": (3, 7),
+            "Public-transport-availability": (7, 7),
+            "Public-transport-usage": (7.5, 4),
+            "Traffic-congestion": (3.5, 4),
+            "Accidents": (1, 2),
+            "Delay": (6, 2),
+            "Alternative-routes": (8.2, 1)
+            }
+    root = (46/256, 20/256, 0/256, 0.8)
+    branch = (117/256, 51/256, 0/256, 0.8)
+    leaf = (23/256, 144/256, 8/256, 0.93)
+    node_color = [root, root, root, branch, branch, branch, leaf, branch, branch, leaf, leaf]
 
-    BN.bn.draw_structure(pos)
+    BN.bn.draw_structure(pos=pos, node_color=node_color)
 
 
 if __name__ == '__main__':
     BN = BNReasoner(exp_path[-1])
-    BN.bn.draw_structure()
+    # BN.bn.draw_structure()
+    create_usecase_structure()
 
 
     # test_maxing_out(BN)
