@@ -114,6 +114,29 @@ class BNReasoner:
         
             CPT = factor1
             return CPT.drop_duplicates()
+        
+    def cpt_mul(self, cpt1, cpt2):
+        new_CPT = pd.DataFrame()
+        columns2 = list(cpt2)
+        columns1 = list(cpt1)
+        
+        for i in range(len(cpt1)):
+            for j in range(len(cpt2)):
+                p_1 = cpt1.iloc[i]["p"]
+                p_2 = cpt2.iloc[j]["p"]
+
+                new_p = round(p_1 * p_2, 8)
+
+                clean = cpt1.iloc[i].drop(['p'])
+
+                new_row = clean.append(cpt2.iloc[j])
+
+                new_row["p"] = new_p
+
+                new_CPT = new_CPT.append(new_row, ignore_index=True)
+        final_cpt = new_CPT[new_CPT['p'] != 0]
+
+        return final_cpt
 
     def mindeg_order(self, X: list):
         interaction_graph = self.bn.get_interaction_graph()
