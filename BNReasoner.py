@@ -1,10 +1,10 @@
 from typing import Union
 from BayesNet import BayesNet
 <<<<<<< Updated upstream
+import copy
+import networkx as nx
 import pandas as pd
-import numpy as np
-import sys
-from itertools import combinations
+
 =======
 import copy
 import networkx as nx
