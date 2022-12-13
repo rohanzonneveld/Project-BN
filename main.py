@@ -49,13 +49,28 @@ def create_usecase_structure(BN):
 
     BN.bn.draw_structure(pos)
 
-
-if __name__ == '__main__':
-    BN = BNReasoner(exp_path[-1])
+def main():
+    BN = BNReasoner(exp_path[0])
     BN.bn.draw_structure()
+    start = timeit.default_timer()
+
+    d = {'family-out': False}
+    evidence = pd.Series(data=d, index=['family-out'])
+
+    print(BN.marginal_distribution({'light-on', 'dog-out', 'hear-bark'}, evidence, 1))#mindegreeorder
+    print(BN.marginal_distribution({'light-on', 'dog-out', 'hear-bark'}, evidence, 2))#minfillorder
+    
+    stop = timeit.default_timer()
+
+    print('Time: ', stop - start)
 
 
     # test_maxing_out(BN)
     # test_factor_mul(BN)
     # test_mindeg_order(BN)
     # test_minfil_order(BN)
+
+
+if __name__ == '__main__':
+    main()
+    
