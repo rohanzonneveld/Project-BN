@@ -23,7 +23,7 @@ def create_bifxml_file(n):
 
     for i, variable in enumerate(variables):
         try:
-            given = variables[i+1]
+            given = random.choice(variables[:i])
         except:
             given = None
         p1 = random.uniform(0,1)
@@ -42,7 +42,7 @@ def create_bifxml_file(n):
         f.write(bifxml)
 
 def main():
-    create_bifxml_file(5)
+    create_bifxml_file(100)
 
 if __name__ == "__main__":
     main()
