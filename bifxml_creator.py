@@ -22,17 +22,19 @@ def create_bifxml_file(n):
         bifxml += "</VARIABLE>\n"
 
     for i, variable in enumerate(variables):
-        try:
-            given = random.choice(variables[:i])
-        except:
-            given = None
-        p1 = random.uniform(0,1)
-        p2 = random.uniform(0,1)
         bifxml += f"<DEFINITION>\n<FOR>{variable}</FOR>\n"
-        if given != None:
-            bifxml += f"<GIVEN>{given}</GIVEN>\n"
-            bifxml += f"<TABLE>{p1} {1-p1} {p2} {1-p2} </TABLE>\n</DEFINITION>\n"
+
+        if i>2:
+            givens = random.sample(variables[:i], 2)
+            for given in givens:       
+                bifxml += f"<GIVEN>{given}</GIVEN>\n"
+            p1 = random.random()
+            p2 = random.random()
+            p3 = random.random()
+            p4 = random.random()
+            bifxml += f"<TABLE>{p1} {1-p1} {p2} {1-p2} {p3} {1-p3} {p4} {1 -p4} </TABLE>\n</DEFINITION>\n"
         else:
+            p1 = random.random()
             bifxml += f"<TABLE>{p1} {1-p1} </TABLE>\n</DEFINITION>\n"
     
     bifxml += "</NETWORK>\n</BIF>"
@@ -42,7 +44,7 @@ def create_bifxml_file(n):
         f.write(bifxml)
 
 def main():
-    create_bifxml_file(100)
+    create_bifxml_file(1000)
 
 if __name__ == "__main__":
     main()
