@@ -1,35 +1,3 @@
-<<<<<<< HEAD
-import BayesNet
-import BNReasoner
-import pandas as pd
-import random
-
-# functions: compute runtime, save runtimes in dict, convert to pd.dataframe and convert to csv: save as 'prune_runtime.csv' Joost
-# For runtime we can use time.time before and after the program ran and subtract those
-
-def save_runtime(runtime: dict, filename: str):
-    df = pd.DataFrame.from_dict(runtime, orient = 'index')
-    df.to_csv(filename)
-
-
-
-# get networks from website and convert to BIFXML Xinhe
-# We already have 7, get 3 more from website in whatsapp
-
-# for network create 5 querys Joost
-# Simplest thing might be to have a list with all the files of the networks in BIFXML format
-for filename in networks_list:
-    bn = BayesNet()
-    bn.load_from_bifxml(filename)
-    bnr = BNReasoner(bn)
-    nodes = list(bn.structure.nodes)
-    random_nodes = random.sample(nodes,3)
-    x,y,z = random_nodes[0], random_nodes[1], random_nodes[2]
-    bnr.d_separation(str(x),str(y),[z])
-# Prune vs unprune(query, network) Joost
-
-# Min deg vs min fill (query, network) Xinhe
-=======
 from BayesNet import BayesNet
 from BNReasoner import BNReasoner
 import itertools
@@ -96,29 +64,80 @@ def create_usecase_structure():
 
     BN.bn.draw_structure(pos=pos, node_color=node_color)
 
-def main():
-    BN = BNReasoner(testing_path[0])
+def test_pruning(BN):
+    # Test network pruning
+    bn = BN.bn
+
+    # create a Bayesian network
+    bn = BayesNet()
+
+    # add some variables and edges
+    bn.add_var('A')
+    bn.add_var('B')
+    bn.add_var('C')
+    bn.add_edge('A', 'B')
+    bn.add_edge('B', 'C')
+
+    # print the network
+    print(bn.structure.nodes())
+    # Output: ['A', 'B', 'C']
+
+    # prune the 'B' variable and its descendants
+    bn.prune('B')
+
+    # print the network again
+    print(bn.structure.nodes())
+    # Output: ['A']
+
+
+
+def test_d_sep():
+
+    # Test d-separation
+    reasoner = BNReasoner()
+    # load the Bayesian network and create the BNReasoner object
+
+    x = 'Smoke'
+    y = 'Cancer'
+    z = ['Pollution']
+
+    if reasoner.d_separation(x, y, z):
+        print(f'{x} and {y} are independent given {z}')
+    else:
+        print(f'{x} and {y} are not independent given {z}')
+
+def test_independence():
+    ## test Independence
+    # create a Bayesian network
+    bn = BayesNet()
+
+    # add some variables and edges
+    bn.add_var('A')
+    bn.add_var('B')
+    bn.add_var('C')
+    bn.add_var('D')
+    bn.add_edge('A', 'B')
+    bn.add_edge('B', 'C')
+    bn.add_edge('B', 'D')
+
+    # check if A is independent of C given B
+    print(bn.is_independent('A', 'C', 'B'))
+    # Output: True
+
+    # check if A is independent of C given D
+    print(bn.is_independent('A', 'C', 'D'))
+    # Output: False
+
+
+if __name__ == '__main__':
+    BN = BNReasoner(exp_path[-1])
     BN.bn.draw_structure()
-    start = timeit.default_timer()
-
-    d = {'family-out': False}
-    evidence = pd.Series(data=d, index=['family-out'])
-
-    print(BN.marginal_distribution({'light-on', 'dog-out', 'hear-bark'}, evidence, 1))#mindegreeorder
-    print(BN.marginal_distribution({'light-on', 'dog-out', 'hear-bark'}, evidence, 2))#minfillorder
-    
-    stop = timeit.default_timer()
-
-    print('Time: ', stop - start)
 
 
     # test_maxing_out(BN)
     # test_factor_mul(BN)
     # test_mindeg_order(BN)
     # test_minfil_order(BN)
-
-
-if __name__ == '__main__':
-    main()
-    
->>>>>>> 1193a0e615db5d29a6d2b516112f4fe0b493a85f
+    # test_d_sep()
+    # test_independence()
+    # test_pruning()
