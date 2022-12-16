@@ -160,7 +160,7 @@ class BNReasoner:
             
         return new_CPT.drop_duplicates()
 
-    def factor_mul(self, CPTS: dict):
+    def factor_mul(self, factor1, factor2):
         """
         function to perform factor multiplication between n factors
         Input: dict of CPTS
@@ -168,53 +168,48 @@ class BNReasoner:
         """
         
         results = pd.DataFrame({})
-        keys = list(CPTS.keys())
-        # set first factor to multiply equal to first factor
-        factor1 = CPTS[keys[0]]
-        # loop over all other factors
-        for factor in range(1,len(CPTS)+1):
-            # set factor two equal to first not multiplied factor
-            factor2 = CPTS[keys[factor]]
-            # get shared vars from factor 1
-            shared_vars = [x for x in factor1.keys() if x in factor2.keys() and x not in ['p', 'maxed']]
-            if len(shared_vars) == 0:
-                print('Cannot mulitply factors because they do not contain overlapping variables')
-                sys.exit()
-            # get vars from factor 2 which are to be added to factor 1
-            added_vars = [x for x in factor2.keys() if x not in factor1.keys()]
-            # loop over rows from factor 1
-            for row1 in range(len(factor1)):
-                # for every row  in factor 1 get the instantiation of the shared vars
-                instantiation = pd.Series(dict(zip(shared_vars,factor1.iloc[row1][shared_vars])))
-                # get the lines from factor 1 compatible with current instantiation
-                compats1 = self.bn.get_compatible_instantiations_table(instantiation, factor1)
-                # loop to create multiplication of factors over compatible rows
-                for row2 in range(len(factor2)):
-                    # for every row in factor 2 get the instantiation of the shared vars
-                    instantiation = pd.Series(dict(zip(shared_vars,factor2.iloc[row2][shared_vars])))
-                    # get the lines from factor 2 compatible with the current instantiation
-                    compats2 = self.bn.get_compatible_instantiations_table(instantiation, factor2)
-                    # loop over compatible rows from both factor1 and factor2
-                    for i in range(len(compats1)):
-                        line1 = compats1.iloc[i]
-                        for j in range(len(compats2)):
-                            line2 = compats2.iloc[j]
-                            # multiply p values
-                            p = line1['p']*line2['p']
-                            # copy the line from factor1
-                            result = line1.copy()
-                            # add all vars not in factor1 to result
-                            for var in added_vars:
-                                result[var] = line2[var]
-                            # update p value from new row
-                            result['p'] = p
-                            # append new row to output
-                            results=results.append(result, 
-                                    ignore_index=True)
-            factor1 = results
+                
+        # get shared vars from factor 1
+        shared_vars = [x for x in factor1.keys() if x in factor2.keys() and x not in ['p', 'maxed']]
+        if len(shared_vars) == 0:
+            print('Cannot mulitply factors because they do not contain overlapping variables')
+            sys.exit()
+
+        # get vars from factor 2 which are to be added to factor 1
+        added_vars = [x for x in factor2.keys() if x not in factor1.keys()]
+
+        # loop over rows from factor 1
+        for row1 in range(len(factor1)):
+            # for every row  in factor 1 get the instantiation of the shared vars
+            instantiation = pd.Series(dict(zip(shared_vars,factor1.iloc[row1][shared_vars])))
+            # get the lines from factor 1 compatible with current instantiation
+            compats1 = self.bn.get_compatible_instantiations_table(instantiation, factor1)
+            # loop to create multiplication of factors over compatible rows
+            for row2 in range(len(factor2)):
+                # for every row in factor 2 get the instantiation of the shared vars
+                instantiation = pd.Series(dict(zip(shared_vars,factor2.iloc[row2][shared_vars])))
+                # get the lines from factor 2 compatible with the current instantiation
+                compats2 = self.bn.get_compatible_instantiations_table(instantiation, factor2)
+                # loop over compatible rows from both factor1 and factor2
+                for i in range(len(compats1)):
+                    line1 = compats1.iloc[i]
+                    for j in range(len(compats2)):
+                        line2 = compats2.iloc[j]
+                        # multiply p values
+                        p = line1['p']*line2['p']
+                        # copy the line from factor1
+                        result = line1.copy()
+                        # add all vars not in factor1 to result
+                        for var in added_vars:
+                            result[var] = line2[var]
+                        # update p value from new row
+                        result['p'] = p
+                        # append new row to output
+                        results=results.append(result, 
+                                ignore_index=True)
         
-            CPT = factor1
-            return CPT.drop_duplicates()
+            CPT = results.drop_duplicates()
+            return CPT
         
     def cpt_mul(self, cpt1, cpt2):
         new_CPT = pd.DataFrame()
@@ -355,213 +350,217 @@ class BNReasoner:
         return new_CPT
     
     def marginal_distribution(self, Q, evidence, order):
-            '''
-            Q = variables in the network BN
-            evidence = instantiation of some variables in the BN
+         '''
+         Q = variables in the network BN
+         evidence = instantiation of some variables in the BN
 
-            output = posterior marginal Pr(Q|e)
-            '''
+         output = posterior marginal Pr(Q|e)
+         '''
 
-            self.prune(Q, evidence)
-            not_Q = [x for x in self.bn.get_all_variables() if x not in Q]
-            if order == 1:
-                order = set(self.mindeg_order(not_Q))
-            elif order == 2:
-                order = set(self.minfil_order(not_Q))
+         self.prune(Q, evidence)
+         not_Q = [x for x in self.bn.get_all_variables() if x not in Q]
+         if order == 1:
+             order = set(self.mindeg_order(not_Q))
+         elif order == 2:
+             order = set(self.minfil_order(not_Q))
 
-            # get all cpts eliminating rows incompatible with evidence
-            for ev in evidence.keys():
+         # order = set(self.randomOrder(self.bn.get_all_variables()))
+         # order_no_Q = order.difference(Q)
 
-                cpts = self.bn.get_cpt(ev)
-                cpts = self.bn.reduce_factor(evidence, cpts)
+         # get all cpts eliminating rows incompatible with evidence
+         for ev in evidence.keys():
 
-                for row in range(len(cpts)):
-                    if cpts.iloc[row]['p'] == 0:
-                        cpts.drop([row])
+             cpts = self.bn.get_cpt(ev)
+             cpts = self.bn.reduce_factor(evidence, cpts)
 
-                self.bn.update_cpt(ev, cpts)
+             for row in range(len(cpts)):
+                 if cpts.iloc[row]['p'] == 0:
+                     cpts.drop([row])
 
-                for child in self.bn.get_children(ev):
-                    cpts = self.bn.get_cpt(child)
-                    cpts = self.bn.reduce_factor(evidence, cpts)
+             self.bn.update_cpt(ev, cpts)
 
-                    for row in range(len(cpts)):
-                        if cpts.iloc[row]['p'] == 0:
-                            cpts.drop([row])
+             for child in self.bn.get_children(ev):
+                 cpts = self.bn.get_cpt(child)
+                 cpts = self.bn.reduce_factor(evidence, cpts)
 
-                    self.bn.update_cpt(child, cpts)
+                 for row in range(len(cpts)):
+                     if cpts.iloc[row]['p'] == 0:
+                         cpts.drop([row])
 
-            # make CPTs of all variables in Pi not in Q
-            S = list(self.bn.get_all_cpts().values())
+                 self.bn.update_cpt(child, cpts)
 
-            for variable in order:
-                list_cpts = []
-                list_goed = []
+         # make CPTs of all variables in Pi not in Q
+         S = list(self.bn.get_all_cpts().values())
 
-                for i in range(0, len(S)):
-                    columns = list(S[i])
-                    if variable in columns:
-                        list_cpts.append(S[i])
-                    else:
-                        list_goed.append(S[i])
+         for variable in order:
+             list_cpts = []
+             list_goed = []
 
-                if len(list_cpts) > 0:
-                    cpt1 = list_cpts[0]
+             for i in range(0, len(S)):
+                 columns = list(S[i])
+                 if variable in columns:
+                     list_cpts.append(S[i])
+                 else:
+                     list_goed.append(S[i])
 
-                if len(list_cpts) == 1:
-                    list_goed.append(list_cpts[0])
+             if len(list_cpts) > 0:
+                 cpt1 = list_cpts[0]
 
-                if len(list_cpts) > 1:
-                    for cpt2 in list_cpts[1:]:
-                        cpt1 = self.factor_mul(cpt1, cpt2)
-                    final_cpt = cpt1
+             if len(list_cpts) == 1:
+                 list_goed.append(list_cpts[0])
 
-                    factor = self.Variable_elimination(final_cpt, [variable], 'sum')
-                    list_goed.append(factor)
+             if len(list_cpts) > 1:
+                 for cpt2 in list_cpts[1:]:
+                     cpt1 = self.factor_mul(cpt1, cpt2)
+                 final_cpt = cpt1
 
-                S = list_goed
-            cpt_new=pd.DataFrame()
-            for i in range(0, len(S) - 1):
-                if len(set(list(S[i])).intersection(set(list(S[i])))) > 1:
-                    cpt_new = self.factor_mul(S[i], S[i + 1])
-                else:
-                    cpt_new = self.cpt_mul(S[i], S[i + 1])
-                    #TODO:need a function to multiply cpts
+                 factor = self.summing_out(final_cpt, [variable], 'sum')
+                 list_goed.append(factor)
 
-                S[i + 1] = cpt_new
-            final_cpt = cpt_new
-            final_cpt = final_cpt[final_cpt['p'] != 0]
+             S = list_goed
+         cpt_new=pd.DataFrame()
+         for i in range(0, len(S) - 1):
+             if len(set(list(S[i])).intersection(set(list(S[i])))) > 1:
+                 cpt_new = self.factor_mul(S[i], S[i + 1])
+             else:
+                 cpt_new = self.factor_mul(S[i], S[i + 1])
+             S[i + 1] = cpt_new
+         final_cpt = cpt_new
+         final_cpt = final_cpt[final_cpt['p'] != 0]
 
-            for var in list(cpt_new):
-                if var != "p":
-                    if var not in Q:
-                        final_cpt = self.Variable_elimination(final_cpt, [var], 'sum')
+         for var in list(cpt_new):
+             if var != "p":
+                 if var not in Q:
+                     final_cpt = self.reduce_factor(final_cpt, [var], 'sum')
 
-            normalize_factor = final_cpt['p'].sum()
-            final_cpt['p'] = final_cpt['p'] / normalize_factor
+         normalize_factor = final_cpt['p'].sum()
+         final_cpt['p'] = final_cpt['p'] / normalize_factor
 
-            # zero
-            final_cpt = final_cpt[final_cpt['p'] != 0]
+         # zero
+         final_cpt = final_cpt[final_cpt['p'] != 0]
 
-            return final_cpt
-        
-        
+         return final_cpt
+
     def MAP_MPE(self, Q, evidence, order):
 
-        # if it is a MPE than map_var is the total BN with all the possible values in it
-        pruned = self.prune(Q, evidence)
+         # if it is a MPE than map_var is the total BN with all the possible values in it
+         pruned = self.prune(Q, evidence)
 
-        variables = self.bn.get_all_variables()
+         variables = self.bn.get_all_variables()
 
-        if list(set(variables) - set(Q)) == []:
-            not_Q = variables
-        else:
-            not_Q = list(set(variables) - set(Q))
+         if list(set(variables) - set(Q)) == []:
+             not_Q = variables
+         else:
+             not_Q = list(set(variables) - set(Q))
 
-        if order == 1:
-            order = set(self.mindeg_order(not_Q))
-        elif order == 2:
-            order = set(self.minfil_order(not_Q))
-        
-        # add MAP variables last
-        if len(Q) != 0:
-            for i in Q:
-                order.add(i)
+         if order == 1:
+             order = set(self.mindeg_order(not_Q))
+         elif order == 2:
+             order = set(self.minfil_order(not_Q))
 
-        # get all cpts eliminating rows incompatible with evidence
-        for ev in evidence.keys():
 
-            cpts = self.bn.get_cpt(ev)
-            cpts = self.bn.reduce_factor(evidence, cpts)
+         # add MAP variables last
+         if len(Q) != 0:
+             for i in Q:
+                 order.add(i)
 
-            for row in range(len(cpts)):
-                if cpts.iloc[row]['p'] == 0:
-                    cpts.drop([row])
+         # get all cpts eliminating rows incompatible with evidence
+         for ev in evidence.keys():
 
-            self.bn.update_cpt(ev, cpts)
+             cpts = self.bn.get_cpt(ev)
+             cpts = self.bn.reduce_factor(evidence, cpts)
 
-            for child in self.bn.get_children(ev):
-                cpts = self.bn.get_cpt(child)
-                cpts = self.bn.reduce_factor(evidence, cpts)
+             for row in range(len(cpts)):
+                 if cpts.iloc[row]['p'] == 0:
+                     cpts.drop([row])
 
-                for row in range(len(cpts)):
-                    if cpts.iloc[row]['p'] == 0:
-                        cpts.drop([row])
+             self.bn.update_cpt(ev, cpts)
 
-                self.bn.update_cpt(child, cpts)
+             for child in self.bn.get_children(ev):
+                 cpts = self.bn.get_cpt(child)
+                 cpts = self.bn.reduce_factor(evidence, cpts)
 
-        # make CPTs of all variables in Pi not in Q
-        S = list(self.bn.get_all_cpts().values())
+                 for row in range(len(cpts)):
+                     if cpts.iloc[row]['p'] == 0:
+                         cpts.drop([row])
 
-        for variable in order:
+                 self.bn.update_cpt(child, cpts)
 
-            list_cpts = []
-            list_goed = []
+         # make CPTs of all variables in Pi not in Q
+         S = list(self.bn.get_all_cpts().values())
 
-            for i in range(0, len(S)):
-                columns = list(S[i])
-                if variable in columns:
-                    list_cpts.append(S[i])
-                else:
-                    list_goed.append(S[i])
+         for variable in order:
 
-            if len(list_cpts) == 1:
-                list_goed.append(list_cpts[0])
+             list_cpts = []
+             list_goed = []
 
-            if len(list_cpts) > 0:
-                cpt1 = list_cpts[0]
+             for i in range(0, len(S)):
+                 columns = list(S[i])
+                 if variable in columns:
+                     list_cpts.append(S[i])
+                 else:
+                     list_goed.append(S[i])
 
-            if len(list_cpts) > 1:
-                for cpt2 in list_cpts[1:]:
-                    cpt1 = self.factor_mul(cpt1, cpt2)
-            
-                final_cpt = cpt1
-                final_cpt = final_cpt[final_cpt['p'] != 0]
+             if len(list_cpts) == 1:
+                 list_goed.append(list_cpts[0])
 
-                if Q == {} or variable in Q:
+             if len(list_cpts) > 0:
+                 cpt1 = list_cpts[0]
 
-                    cpt = self.Variable_elimination(final_cpt, [variable], 'max')
+             if len(list_cpts) > 1:
+                 for cpt2 in list_cpts[1:]:
+                     cpt1 = self.factor_mul(cpt1, cpt2)
 
-                else:
-                    cpt = self.Variable_elimination(final_cpt, [variable], 'sum')
+                 final_cpt = cpt1
+                 final_cpt = final_cpt[final_cpt['p'] != 0]
 
-                cpt = cpt[cpt['p'] != 0]
+                 if Q == {} or variable in Q:
 
-                list_goed.append(cpt)
+                     cpt = self.maxing_out(final_cpt, variable)
 
-            S = list_goed
+                 else:
+                     cpt = self.reduce_factor(final_cpt, [variable], 'sum')
 
-            # print(S)
-        if len(S) == 1:
-            cpt_new = S[0]
-        else:
-            for i in range(0, len(S) - 1):
-                cpt_new = self.cpt_mul(S[i], S[i + 1])
-                #TODO:need a function to multiply cpts
+                 cpt = cpt[cpt['p'] != 0]
 
-                S[i + 1] = cpt_new
-        final_cpt = cpt_new
+                 list_goed.append(cpt)
 
-        highest_p = 0
-        final_cpt = final_cpt[final_cpt['p'] != 0]
+             S = list_goed
 
-        length_final_cpt = len(final_cpt)
-        for i in range(length_final_cpt):
+             # print(S)
+         if len(S) == 1:
+             cpt_new = S[0]
+         else:
+             for i in range(0, len(S) - 1):
+                 cpt_new = self.factor_mul(S[i], S[i + 1])
 
-            if final_cpt.iloc[i]["p"] > highest_p:
-                highest_p = final_cpt.iloc[i]["p"]
-                final_row = final_cpt.iloc[i]
+                 S[i + 1] = cpt_new
+         final_cpt = cpt_new
 
-        newest_cpt = pd.DataFrame()
-        newest_cpt = newest_cpt.append(final_row, ignore_index=True)
+         highest_p = 0
+         final_cpt = final_cpt[final_cpt['p'] != 0]
 
-        for column in newest_cpt:
-            if column != "p":
-                if column not in Q and Q != {}:
-                    newest_cpt = newest_cpt.drop(columns=[column])
-        
-        # print(f"final_cpt {newest_cpt}")
-        return newest_cpt
+         length_final_cpt = len(final_cpt)
+         for i in range(length_final_cpt):
+
+             if final_cpt.iloc[i]["p"] > highest_p:
+                 highest_p = final_cpt.iloc[i]["p"]
+                 final_row = final_cpt.iloc[i]
+
+             # else:
+             #     final_cpt.iloc[i]["p"] = 0
+             # final_cpt = final_cpt.drop(axis=1,index=[i])
+
+         newest_cpt = pd.DataFrame()
+         newest_cpt = newest_cpt.append(final_row, ignore_index=True)
+
+         for column in newest_cpt:
+             if column != "p":
+                 if column not in Q and Q != {}:
+                     newest_cpt = newest_cpt.drop(columns=[column])
+
+         # print(f"final_cpt {newest_cpt}")
+         return newest_cpt
         
      
 

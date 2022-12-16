@@ -1,6 +1,8 @@
 from BayesNet import BayesNet
 from BNReasoner import BNReasoner
 import itertools
+import os
+import pandas as pd
 
 testing_path=[ "testing/dog_problem.BIFXML",
                "testing/lecture_example.BIFXML",
@@ -14,10 +16,10 @@ exp_path=["bifxml_files/large_networks/win95pts.bifxml",
           "bifxml_files/traffic.bifxml"]
 
 
-def test_factor_mul(BN):
-    
+def test_factor_mul():
+    BN = BNReasoner('testing/dog_problem.BIFXML')
     cpts = BN.bn.get_all_cpts()
-    f1f2 = BN.factor_mul(dict(itertools.islice(cpts.items(), 2, 4)))
+    f1f2 = BN.factor_mul(cpts['dog-out'], cpts['hear-bark'])
     print(cpts['dog-out'])
     print()
     print(cpts['hear-bark'])
@@ -64,9 +66,8 @@ def create_usecase_structure():
 
     BN.bn.draw_structure(pos=pos, node_color=node_color)
 
-def test_pruning(BN):
+def test_pruning():
     # Test network pruning
-    bn = BN.bn
 
     # create a Bayesian network
     bn = BayesNet()
@@ -128,16 +129,40 @@ def test_independence():
     print(bn.is_independent('A', 'C', 'D'))
     # Output: False
 
+def test_marginal_distribution():
+    file = os.path.join("testing", "dog_problem.BIFXML")
+    
+    # test case
+    BN = BNReasoner(file)
+
+    d = {'family-out': False}
+    evidence = pd.Series(data=d, index=['family-out'])
+
+    print(BN.marginal_distribution({'light-on', 'dog-out', 'hear-bark'}, evidence, 2))
+
+def test_MAP_MPE():
+    file = os.path.join("testing", "dog_problem.BIFXML")
+    
+    # test case
+    BN = BNReasoner(file)
+
+    d = {'family-out': False}
+    evidence = pd.Series(data=d, index=['family-out'])
+
+    print(BN.MAP_MPE({}, evidence, 2))
+
 
 if __name__ == '__main__':
-    BN = BNReasoner(exp_path[-1])
-    BN.bn.draw_structure()
+    # BN = BNReasoner(exp_path[-1])
+    # BN.bn.draw_structure()
 
 
     # test_maxing_out(BN)
-    # test_factor_mul(BN)
+    # test_factor_mul()
     # test_mindeg_order(BN)
     # test_minfil_order(BN)
     # test_d_sep()
     # test_independence()
     # test_pruning()
+    test_marginal_distribution()
+    # test_MAP_MPE()
