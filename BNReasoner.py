@@ -19,7 +19,6 @@ class BNReasoner:
             self.bn.load_from_bifxml(net)
         else:
             self.bn = net
-
     def count_nodes_and_edges(self):
         edges = 0
         nodes = 0
@@ -85,6 +84,7 @@ class BNReasoner:
                 for node in descendants:
                     self.bn.del_edge((var, node))
                     mod = True
+    # @profile                 
     def d_separation(self, x: str, y: str, z: list) -> bool:
         """
         Checks whether the variables x and y are independent given the observations in z using the d-separation criterion.
@@ -94,11 +94,21 @@ class BNReasoner:
         :param z: The observations that are known to be true. Can be a single variable or a list of variables.
         :return: True if x and y are independent given z, False otherwise.
         """
-        cp = copy.deepcopy(self)
+        # cp = copy.deepcopy(self)
+        # self.bn.draw_structure()
+        edges = []
         for edge in self.bn.structure.edges:
-            cp.bn.structure.add_edge(edge[1], edge[0])
+            edges.append((edge[1], edge[0]))
+        for edge in edges:
+            self.bn.structure.add_edge(edge[0],edge[1])
+            
+        paths = list(nx.all_simple_paths(self.bn.structure, x, y))
+        if len(paths) == 0:
+            return True
+        
 
-        paths = nx.all_simple_paths(cp.bn.structure, x, y)
+        for edge in edges:
+            self.bn.del_edge((edge[0],edge[1]))
         for path in paths:
             active = True
             for idx in range(1, len(path)-1):
@@ -211,29 +221,6 @@ class BNReasoner:
             CPT = results.drop_duplicates()
             return CPT
         
-    def cpt_mul(self, cpt1, cpt2):
-        new_CPT = pd.DataFrame()
-        columns2 = list(cpt2)
-        columns1 = list(cpt1)
-        
-        for i in range(len(cpt1)):
-            for j in range(len(cpt2)):
-                p_1 = cpt1.iloc[i]["p"]
-                p_2 = cpt2.iloc[j]["p"]
-
-                new_p = round(p_1 * p_2, 8)
-
-                clean = cpt1.iloc[i].drop(['p'])
-
-                new_row = clean.append(cpt2.iloc[j])
-
-                new_row["p"] = new_p
-
-                new_CPT = new_CPT.append(new_row, ignore_index=True)
-        final_cpt = new_CPT[new_CPT['p'] != 0]
-
-        return final_cpt
-
     def mindeg_order(self, X: list):
         """
         function to decide in what order to eliminate the variables for a query based on the 

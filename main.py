@@ -148,21 +148,22 @@ def test_MAP_MPE():
 
     d = {'family-out': False}
     evidence = pd.Series(data=d, index=['family-out'])
-
-    print(BN.MAP_MPE({}, evidence, 2))
+    Q = BN.MAP_MPE(BN.bn.get_all_variables())
+    print(Q)
+    # print(Q, evidence, 2))
 
 
 if __name__ == '__main__':
-    # BN = BNReasoner(exp_path[-1])
+    BN = BNReasoner(exp_path[-1])
     # BN.bn.draw_structure()
 
 
-    # test_maxing_out(BN)
+    test_maxing_out(BN)
     # test_factor_mul()
     # test_mindeg_order(BN)
     # test_minfil_order(BN)
     # test_d_sep()
     # test_independence()
     # test_pruning()
-    test_marginal_distribution()
+    # test_marginal_distribution()
     # test_MAP_MPE()
