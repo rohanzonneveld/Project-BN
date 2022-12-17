@@ -513,7 +513,7 @@ class BNReasoner:
 
         return new_CPT
 
-    def reduce_factor(self, CPT, list, type):
+    def check_double(self, CPT, list, type):
         """
         sum all the values from a list out
 
