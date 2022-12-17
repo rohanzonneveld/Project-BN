@@ -308,7 +308,7 @@ class BNReasoner:
 
         return new_CPT
     
-    def Variable_elimination(self, CPT, list, type):
+    def reduce_factor(self, CPT, list, type):
 
         index_same = {}
 
