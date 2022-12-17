@@ -147,6 +147,27 @@ def test_variable_elim():
     result = BN.Variable_elimination(cpt, vars)
     print(result)
 
+def tests_MargDib_MAP_MPE():
+    # test case
+    BN = BNReasoner('testing/dog_problem.BIFXML')
+
+    d = {'family-out': False}
+    evidence = pd.Series(data=d, index=['family-out'])
+    Q = {'light-on', 'dog-out', 'hear-bark'}
+    print('Marginal Distrbution P(Q|e)')
+    print(f'Q = {Q}, e = {evidence}')
+    # print(BN.marginal_distribution(Q, evidence, 3))
+    print('MPE')
+    print(BN.MAP_MPE({}, evidence, 2))
+
+def queries_usecase():
+    BN = BNReasoner(exp_path[-1])
+
+    evidence = pd.Series(data={'Alternative-routes': True}, index=['Alternative-routes'])
+
+    print(BN.MAP_MPE({}, evidence, 2))
+
+
 
 if __name__ == '__main__':
     BN = BNReasoner(exp_path[-1])
@@ -161,5 +182,5 @@ if __name__ == '__main__':
     # test_mindeg_order(BN)
     # test_minfil_order(BN)
     # test_variable_elim() 
-    # test_marginal_distribution() #TODO
-    # test_MAP_MPE() #TODO
+    # tests_MargDib_MAP_MPE()
+    queries_usecase()

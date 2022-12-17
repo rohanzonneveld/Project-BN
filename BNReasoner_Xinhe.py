@@ -309,7 +309,7 @@ class BNReasoner:
 
         return new_CPT
 
-    def factor_mul_Xinhe(self, CPT_1, CPT_2):
+    def factor_mul(self, CPT_1, CPT_2):
         CPT_1 = CPT_1.reset_index(drop=True)
         CPT_2 = CPT_2.reset_index(drop=True)
 
@@ -637,6 +637,10 @@ class BNReasoner:
         d = {'family-out': False}
         evidence = pd.Series(data=d, index=['family-out'])
 
-        #print(self.marginal_distribution({'light-on', 'dog-out', 'hear-bark'}, evidence, 3))
-        self.MAP_MPE({}, evidence, 2)
+        print(self.marginal_distribution({'light-on', 'dog-out', 'hear-bark'}, evidence, 3))
+        # print(self.MAP_MPE({}, evidence, 2))
         return
+
+if __name__ == '__main__':
+    BN = BNReasoner('testing/dog_problem.bifxml')
+    BN.run()
