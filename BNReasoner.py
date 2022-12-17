@@ -19,6 +19,7 @@ class BNReasoner:
             self.bn.load_from_bifxml(net)
         else:
             self.bn = net
+
     def count_nodes_and_edges(self):
         edges = 0
         nodes = 0
@@ -28,6 +29,7 @@ class BNReasoner:
             nodes += 1
         
         return nodes, edges, nodes + edges
+
     def is_path_active(self, start, middle, end, evidence):
         #Causal
         if (middle in self.bn.get_children(start) and end in self.bn.get_children(middle)) or (middle in self.bn.get_children(end) and start in self.bn.get_children(middle)):
@@ -56,8 +58,6 @@ class BNReasoner:
             return False
         return True   
 
-
-
     def prune(self, query: list, evidence: dict) -> None:
         """
         Prunes a variable and all its descendants from the Bayesian network.
@@ -66,24 +66,18 @@ class BNReasoner:
         mod = True
         while mod:
             mod = False
-            for var in self.bn.get_all_variables():
-                if self.bn.get_children(var) == [] and var not in evidence and var not in query:
-                    self.bn.del_var(var)
+            for node,value in evidence.items():
+                descendants = self.bn.get_children(node)
+                for child in descendants:
+                    self.bn.del_edge((node,child))
                     mod = True
+            
+            for node in self.bn.get_all_variables():
+                if node not in evidence and node not in query:
+                    if not self.bn.get_children(node):
+                        self.bn.del_var(node)
+                        mod = True
 
-            cpts = self.bn.get_all_cpts()
-            for var, value in evidence.items():
-                for node in self.bn.get_all_variables():
-                    cpt = cpts[node]
-                    if var in cpt.columns:
-                        idxs = cpt[cpt[var] != value].index
-                        cpt = cpt.drop(idxs)
-                        self.bn.update_cpt(var,cpt)
-
-                descendants = self.bn.get_children(var)   
-                for node in descendants:
-                    self.bn.del_edge((var, node))
-                    mod = True
     # @profile                 
     def d_separation(self, x: str, y: str, z: list) -> bool:
         """
@@ -143,7 +137,6 @@ class BNReasoner:
         new_CPT = pd.DataFrame({})
         vars = [x for x in CPT if x not in ['p', 'maxed', variable]]
 
-        # loop over all possibilities for X\variable
         # loop over every row in cpt
         for i in range(len(CPT)):
             # select instantiation from line i
@@ -166,6 +159,35 @@ class BNReasoner:
             new_CPT = new_CPT.append(line, 
                         ignore_index=True)
             # delete maximized out variable from cpt
+            new_CPT.pop(variable)
+            
+        return new_CPT.drop_duplicates()
+
+    def summing_out(self, CPT: dict, variable: str):
+        """
+        function to sum out a variable from a cpt
+        input:  - a cpt (dict)
+                - the variable to maximize out from the cpt (str)
+        output: the summed out cpt 
+        """
+        new_CPT = pd.DataFrame({})
+        vars = [x for x in CPT if x not in ['p', 'maxed', variable]]
+
+        # loop over every row in cpt
+        for i in range(len(CPT)):
+            # select instantiation from line i
+            instantiation = pd.Series(dict(zip(vars,CPT.iloc[i][vars])))
+            # get all compatible instantiations
+            table = self.bn.get_compatible_instantiations_table(instantiation, CPT)
+            # select row with highest p-value
+            p_value = sum(table['p'])
+            # add assignment of variable to row
+            line = CPT.iloc[i].copy()
+            line['p'] = p_value
+            # add new summed out line to new cpt
+            new_CPT = new_CPT.append(line, 
+                        ignore_index=True)
+            # delete summed out variable from cpt
             new_CPT.pop(variable)
             
         return new_CPT.drop_duplicates()
@@ -281,60 +303,13 @@ class BNReasoner:
 
         return pi
     
-    def summing_out(self, CPT, index_same, list):
-        '''
-        create the final new CPT without the variables that should be summed out
-        '''
-        new_CPT = CPT.copy()
+
+    def Variable_elimination(self, CPT, list):
+
         for variable in list:
-            new_CPT = new_CPT.drop(columns=[variable])
+            CPT = self.summing_out(CPT, variable)
 
-        for key in index_same:
-
-            p_value_sum = CPT.iloc[key]['p']
-
-            equal_indexes = [index_same.get(key)]
-
-            for i in equal_indexes:
-                p = CPT.iloc[i]['p'].values
-                p_value_sum += p[0]
-                new_CPT.at[i, 'p'] = 0
-
-            new_CPT.at[key, 'p'] = p_value_sum
-
-        for index_CPT in range(len(new_CPT)):
-            if new_CPT.iloc[index_CPT]['p'] == 0:
-                new_CPT.drop([index_CPT])
-
-        return new_CPT
-    
-    def Variable_elimination(self, CPT, list, type):
-
-        index_same = {}
-
-        clean_CPT = CPT.copy()
-
-        clean_CPT = clean_CPT.drop(columns=["p"])
-        for variable in list:
-            clean_CPT = clean_CPT.drop(columns=[variable])
-
-        for row_1 in clean_CPT.iloc:
-            for i in range(row_1.name + 1, len(clean_CPT)):
-                row_2 = clean_CPT.iloc[i]
-
-                if row_1.equals(row_2):
-
-                    if row_1.name in index_same:
-                        index_same[row_1.name].append(i)
-                    else:
-                        index_same[row_1.name] = [i]
-
-        if type == "sum":
-            new_CPT = self.summing_out(CPT, index_same, list)
-        elif type == "max":
-            new_CPT = self.maxing_out(CPT, index_same)
-
-        return new_CPT
+        return CPT
     
     def marginal_distribution(self, Q, evidence, order):
          '''

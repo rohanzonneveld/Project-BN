@@ -26,13 +26,16 @@ def test_factor_mul():
     print()
     print(f1f2)
 
-def test_maxing_out(BN):
+def test_maxing_out():
+    BN = BNReasoner('testing/dog_problem.BIFXML')
     cpt = BN.bn.get_all_cpts()['dog-out']
     print(cpt)
-    new_cpt = BN.maxing_out(cpt,'family-out')
-    print(new_cpt)
-    second_cpt = BN.maxing_out(new_cpt, 'bowel-problem')
+    first_cpt = BN.maxing_out(cpt,'family-out')
+    print(first_cpt)
+    second_cpt = BN.maxing_out(first_cpt, 'bowel-problem')
     print(second_cpt)
+    third_cpt = BN.maxing_out(second_cpt,'dog-out')
+    print(third_cpt)
 
 def test_mindeg_order(BN):
     X = BN.bn.get_all_variables()
@@ -67,67 +70,44 @@ def create_usecase_structure():
     BN.bn.draw_structure(pos=pos, node_color=node_color)
 
 def test_pruning():
-    # Test network pruning
-
-    # create a Bayesian network
-    bn = BayesNet()
-
-    # add some variables and edges
-    bn.add_var('A')
-    bn.add_var('B')
-    bn.add_var('C')
-    bn.add_edge('A', 'B')
-    bn.add_edge('B', 'C')
-
-    # print the network
-    print(bn.structure.nodes())
-    # Output: ['A', 'B', 'C']
-
-    # prune the 'B' variable and its descendants
-    bn.prune('B')
-
-    # print the network again
-    print(bn.structure.nodes())
-    # Output: ['A']
+    bnr = BNReasoner("testing/lecture_example.BIFXML")
+    bnr.bn.draw_structure()
+    Query = 'Wet Grass'
+    evidence = {'Winter?': True, 'Rain?': False}
+    print(f"Query: {Query}, evidence: {evidence}")
+    bnr.prune(['Wet Grass?'], {'Winter?': True, 'Rain?': False})
+    bnr.bn.draw_structure()
 
 
 
 def test_d_sep():
 
     # Test d-separation
-    reasoner = BNReasoner()
+    reasoner = BNReasoner('bifxml_files/small_networks/cancer.bifxml')
     # load the Bayesian network and create the BNReasoner object
 
-    x = 'Smoke'
+    x = 'Smoker'
     y = 'Cancer'
     z = ['Pollution']
 
     if reasoner.d_separation(x, y, z):
+        print(f'{x} and {y} are d-seperated given {z}')
+    else:
+        print(f'{x} and {y} are not d-separated given {z}')
+
+def test_independence():
+    bnr = BNReasoner("testing/lecture_example.BIFXML")
+    x = 'Winter?'
+    y = 'Wet Grass?'
+    z = 'Sprinkler?'
+
+    independent = bnr.is_independent(x, y, [z])
+    
+    if independent:
         print(f'{x} and {y} are independent given {z}')
     else:
         print(f'{x} and {y} are not independent given {z}')
 
-def test_independence():
-    ## test Independence
-    # create a Bayesian network
-    bn = BayesNet()
-
-    # add some variables and edges
-    bn.add_var('A')
-    bn.add_var('B')
-    bn.add_var('C')
-    bn.add_var('D')
-    bn.add_edge('A', 'B')
-    bn.add_edge('B', 'C')
-    bn.add_edge('B', 'D')
-
-    # check if A is independent of C given B
-    print(bn.is_independent('A', 'C', 'B'))
-    # Output: True
-
-    # check if A is independent of C given D
-    print(bn.is_independent('A', 'C', 'D'))
-    # Output: False
 
 def test_marginal_distribution():
     file = os.path.join("testing", "dog_problem.BIFXML")
@@ -152,18 +132,34 @@ def test_MAP_MPE():
     print(Q)
     # print(Q, evidence, 2))
 
+def test_summing_out():
+    BN = BNReasoner('testing/dog_problem.BIFXML')
+    cpt = BN.bn.get_all_cpts()['dog-out']
+    print(cpt)
+    first_cpt = BN.summing_out(cpt,'family-out')
+    print(first_cpt)
+    
+def test_variable_elim():
+    BN = BNReasoner('testing/dog_problem.BIFXML')
+    cpt = BN.bn.get_all_cpts()['dog-out']
+    print(cpt)
+    vars = ['dog-out', 'bowel-problem', 'family-out']
+    result = BN.Variable_elimination(cpt, vars)
+    print(result)
+
 
 if __name__ == '__main__':
     BN = BNReasoner(exp_path[-1])
     # BN.bn.draw_structure()
 
-
-    test_maxing_out(BN)
+    # test_pruning() 
+    # test_d_sep()
+    # test_independence()
+    # test_summing_out()
+    # test_maxing_out()
     # test_factor_mul()
     # test_mindeg_order(BN)
     # test_minfil_order(BN)
-    # test_d_sep()
-    # test_independence()
-    # test_pruning()
-    # test_marginal_distribution()
-    # test_MAP_MPE()
+    # test_variable_elim() 
+    # test_marginal_distribution() #TODO
+    # test_MAP_MPE() #TODO
